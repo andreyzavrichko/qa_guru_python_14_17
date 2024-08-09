@@ -1,4 +1,7 @@
+import json
+
 import requests
+from jsonschema.validators import validate
 
 
 def test_list_users(base_url):
@@ -152,3 +155,48 @@ def test_patch(base_url):
     update = requests.patch(base_url + '/api/users/' + id, data=payload_update)
     assert update.status_code == 200
     assert update.json()['job'] == new_job
+
+
+def test_list_users_schema(base_url):
+    response = requests.get(base_url + '/api/users', params='page=2')
+    assert response.status_code == 200
+    # Валидация ответа от сервера
+    with open('../schemas/list_user.json') as file:
+        schema = json.load(file)
+    validate(instance=response.json(), schema=schema)
+
+
+def test_single_user_schema(base_url):
+    response = requests.get(base_url + '/api/users/2')
+    assert response.status_code == 200
+    with open('../schemas/single_user.json') as file:
+        schema = json.load(file)
+    validate(instance=response.json(), schema=schema)
+
+
+def test_list_resource_schema(base_url):
+    response = requests.get(base_url + '/api/unknown')
+    assert response.status_code == 200
+    with open('../schemas/list_resources.json') as file:
+        schema = json.load(file)
+    validate(instance=response.json(), schema=schema)
+
+
+def test_single_resource_schema(base_url):
+    response = requests.get(base_url + '/api/unknown/2')
+    assert response.status_code == 200
+    with open('../schemas/single_resources.json') as file:
+        schema = json.load(file)
+    validate(instance=response.json(), schema=schema)
+
+
+def test_login_successful_schema(base_url):
+    payload = {
+        "email": "eve.holt@reqres.in",
+        "password": "cityslicka"
+    }
+    response = requests.post(base_url + '/api/login', data=payload)
+    assert response.status_code == 200
+    with open('../schemas/login_successful.json') as file:
+        schema = json.load(file)
+    validate(instance=response.json(), schema=schema)
